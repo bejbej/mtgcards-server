@@ -1,11 +1,15 @@
-var cors = require("cors");
-var express = require("express");
 var env = require('env2')('./env.json');
 var db = require("./db/db.js");
 var controllers = require("./controllers/controllers.js");
+var bodyParser = require("body-parser");
 
-var app = express();
+var app = require("./common/app.js")();
+app.use(bodyParser.json());
 controllers(app);
+
+app.use((error, request, response, next) => {
+    response.status(500).json(error);
+});
 
 db.init(process.env.database).then(() => {
     console.log("Database connection ready");
@@ -16,3 +20,4 @@ db.init(process.env.database).then(() => {
 }).catch(error => {
     console.log("Database connection error: " + error);
 });
+

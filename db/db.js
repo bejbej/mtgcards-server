@@ -8,8 +8,7 @@ module.exports = function () {
             cmc: Number,
             primaryType: String,
             color: String,
-            multiverseId: String,
-            price: String
+            multiverseId: Number
         }, { versionKey: false });
 
         card.set("toJSON", {
@@ -25,6 +24,7 @@ module.exports = function () {
     var set = () => {
         var set = mongoose.Schema({
             name: String,
+            code: String
         }, { versionKey: false });
 
         set.set("toJSON", {

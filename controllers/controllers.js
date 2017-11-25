@@ -1,40 +1,61 @@
 module.exports = (app) => {
-    var db = require("../db/db.js");
-    var handleError = require("../common/handleError.js");
-    var update = require("../common/cardUpdater.js");
+    var cardService = require("../common/cardService.js");
+    var setService = require("../common/setService.js");
 
     app.get("/api/cat", (request, response) => {
-        response.status(200).json({ cat: "~(=^..^)" });
-    });
-
-    app.get("/api/sets", (request, response) => {
-        db.Set.find().then(sets => {
-            sets = sets.map(set => set.name).sort();
-            response.status(200).json(sets);
-        }).catch(error => {
-            handleError(response, error.message, "Failed to get sets.");
-        });
+        return response.status(200).json({ cat: "~(=^..^)" });
     });
 
     app.get("/api/cards", (request, response) => {
-        db.Card.find({}).then(cards => {
+        return cardService.getAll()
+        .then(cards => {
             return "name\tprimaryType\tcmc\tcolor\tmultiverseId\n" + cards.map(card => {
                 return  card.name + "\t" + card.primaryType + "\t" + card.cmc + "\t" + card.color + "\t" + card.multiverseId + "\n";
             }).sort().join("");
-        }).then(csv => {
-            response.status(200).send(csv);
-        }).catch(error => {
-            handleError(respose, error.message, "Failed to get cards");
-        });
+        })
+        .then(csv => response.status(200).send(csv));
     });
 
-    app.get("/api/update/:limit", (request, response) => {
-        update.exec(request.params.limit).then(message => {
-            console.log(message);
-            response.status(201).send(message);
-        }).catch(error => {
-            console.log(error);
-            response.status(500).send(error);
-        });
+    app.get("/api/sets", (request, response) => {
+        return setService.getKnown()
+        .then(sets => response.status(200).json({ count: sets.length, sets: sets.map(set => set.name + " - " + set.code).sort() }));
+    });
+
+    app.get("/api/unknownsets", (request, response) => {
+        return setService.getUnknown()
+        .then(sets => response.status(200).send({ count: sets.length, sets: sets.map(set => set.name + " - " + set.code).sort() }));
+    });
+
+    app.post("/api/unknownsets", (request, response) => {
+        let limit = request.body.limit || 1;
+        return setService.getUnknown()
+        .then(sets => sets.slice(0, limit))
+        .then(sets => {
+            return sets.map(set => {
+                return cardService.getByCode(set.code)
+                .then(cards => cards.map(cardService.save))
+                .then(promises => Promise.all(promises))
+                .then(() => setService.save(set));
+            });
+        })
+        .then(promises => Promise.all(promises))
+        .then(() => response.status(201).send());
+    });
+
+    app.get("/api/sets/:code", (request, response) => {
+        return setService.getByCode(request.params.code)
+        .then(set => cardService.getByCode(set.code))
+        .then(cards => response.status(200).send({ count: cards.length, cards: cards }));
+    });
+
+    app.post("/api/sets/:code", (request, response) => {
+        return setService.getByCode(request.params.code)
+        .then(set => {
+            return cardService.getByCode(set.code)
+            .then(cards => cards.map(cardService.save))
+            .then(promises => Promise.all(promises))
+            .then(() => setService.save(set));
+        })
+        .then(message => response.status(201).send());
     });
 }
