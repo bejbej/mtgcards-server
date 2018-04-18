@@ -8,7 +8,8 @@ module.exports = function () {
             cmc: Number,
             primaryType: String,
             color: String,
-            multiverseId: Number
+            multiverseId: String,
+            imageUri: String
         }, { versionKey: false });
 
         card.set("toJSON", {
@@ -18,13 +19,14 @@ module.exports = function () {
             }
         });
 
-        return mongoose.model("cards", card);
+        return mongoose.model("cards2", card);
     }
 
     var set = () => {
         var set = mongoose.Schema({
             name: String,
-            code: String
+            code: String,
+            searchUri: String
         }, { versionKey: false });
 
         set.set("toJSON", {
@@ -33,7 +35,7 @@ module.exports = function () {
             }
         });
 
-        return mongoose.model("sets", set);
+        return mongoose.model("sets2", set);
     }
 
     var init = (connectionString) => {

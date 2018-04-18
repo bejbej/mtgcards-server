@@ -1,3 +1,4 @@
+require("./common/helpers.js");
 var env = require('env2')('./env.json');
 var db = require("./db/db.js");
 var controllers = require("./controllers/controllers.js");
@@ -8,7 +9,7 @@ app.use(bodyParser.json());
 controllers(app);
 
 app.use((error, request, response, next) => {
-    response.status(500).json(error);
+    response.status(500).json({message: error.message, stack: error.stack});
 });
 
 db.init(process.env.database).then(() => {

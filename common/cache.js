@@ -8,18 +8,17 @@ module.exports = function () {
 
         if (item !== undefined) {
             if (item.expirationDate > new Date().getTime()) {
-                return Promise.resolve(item.value);
+                return item.value;
             }
 
             delete cache[key];
         }
 
-        return func().then(result => {
-            let now = new Date();
-            let expirationDate = now.setSeconds(now.getSeconds() + expiration);
-            cache[key] = { value: result, expirationDate: expirationDate };
-            return result;
-        });
+        let value = func();
+        let now = new Date();
+        let expirationDate = now.setSeconds(now.getSeconds() + expiration);
+        cache[key] = { value: value, expirationDate: expirationDate };
+        return value;
     }
 
     return {
