@@ -7,6 +7,7 @@ module.exports = function () {
 
     let setTypeWhitelist = [
         "core",
+        "draft_innovation",
         "expansion",
         "masters",
         "duel_deck",
@@ -27,6 +28,11 @@ module.exports = function () {
             return false;
         }
 
+        let cutoff = new Date() + 1209600000; // Sets are generally spoiled 2 full weeks before official release
+        if (new Date(set.released_at) > cutoff) {
+            return false;
+        }
+
         return true;
     }
 
@@ -38,12 +44,13 @@ module.exports = function () {
         return {
             name: set.name,
             code: set.code,
-            searchUri: set.search_uri
+            searchUri: set.search_uri,
+            releasedOn: new Date(set.released_at)
         }
     }
 
     let getByCode = (code) => {
-        return db.Set.findOne({code: code})
+        return db.sets().findOne({code: code})
         .then(set => {
             if (set !== null) {
                 return set;
@@ -54,7 +61,7 @@ module.exports = function () {
     }
 
     let getKnown = () => {
-        return db.Set.find();
+        return db.sets().find().toArray();
     }
 
     let getAll = () => {
@@ -82,7 +89,7 @@ module.exports = function () {
     }
 
     let save = (set) => {
-        return db.Set.findOneAndUpdate({code: set.code}, set, {upsert: true});
+        return db.sets().findOneAndUpdate({code: set.code}, set, {upsert: true});
     }
 
     return {

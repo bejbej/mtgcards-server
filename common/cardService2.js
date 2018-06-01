@@ -37,7 +37,7 @@ module.exports = function () {
         return false;
     }
 
-    let mapCard = (card) => {
+    let mapCard = (card, set) => {
         let determineName = (card) => {
             if (card.layout === "transform" || card.layout === "flip") {
                 let primaryFace = card.card_faces.filter(face => card.name.indexOf(face.name) === 0)[0];
@@ -109,8 +109,10 @@ module.exports = function () {
             cmc: card.cmc,
             color: determineColor(card),
             primaryType: determinePrimaryType(card),
-            multiverseId: card.multiverse_ids.max(id => id) || 0,
-            imageUri: determineImageUri(card)
+            printings:[{
+                imageUri: determineImageUri(card),
+                releasedOn: set.releasedOn
+            }]
         };
     }
 
@@ -139,24 +141,29 @@ module.exports = function () {
     }
 
     let getAll = () => {
-        return db.Card.find();
+        return db.cards().find().toArray();
     }
 
     let save = (card) => {
-        return db.Card.findOne({name: card.name})
-        .then(x => {
-            if (x && x.multiverseId > card.multiverseId) {
+        return db.cards().findOne({name: card.name})
+        .then(existingCard => {
+            if (!existingCard) {
+                return db.cards().findOneAndUpdate({name: card.name}, card, {upsert: true});
+            }
+
+            let thisPrinting = card.printings[0];
+            if (existingCard.printings.some(x => x.imageUri === thisPrinting.imageUri)) {
                 return Promise.resolve();
             }
 
-            return db.Card.findOneAndUpdate({name: card.name}, card, {upsert: true});
+            existingCard.printings.push(thisPrinting);
+            return db.cards().findOneAndUpdate({name: card.name}, card, {upsert: true});
         });
     }
 
     return {
         getAll: getAll,
         getBySet: getBySet,
-        save: save,
-        fix: fix
+        save: save
     }
 }();

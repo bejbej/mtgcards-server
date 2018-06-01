@@ -6,11 +6,26 @@ module.exports = (app) => {
         return response.status(200).json({ cat: "~(=^..^)" });
     });
 
+    app.get("/api", (request, response) => {
+        let body = {
+            "All cards as a CSV": "GET /api/cards",
+            "All sets": "GET /api/sets",
+            "Unknown sets": "GET /api/sets/unknown",
+            "Known sets": "GET /api/sets/known",
+            "Get a specific set": "GET /api/sets/code/{code}",
+            "Get cards for a specific set": "GET /api/sets/code/{code}/cards",
+            "Migrate cards for a specific set": "POST /api/sets/code/{code}/cards",
+            "Migrate cards for a specific amount of arbitrary sets": "POST /api/sets/batch/{quantity}/cards"
+        };
+        response.json(body);
+    });
+
     app.get("/api/cards", (request, response) => {
         return cardService2.getAll()
         .then(cards => {
             return "name\tprimaryType\tcmc\tcolor\timageUri\n" + cards.map(card => {
-                return  card.name + "\t" + card.primaryType + "\t" + card.cmc + "\t" + card.color + "\t" + card.imageUri + "\n";
+                let imageUri = card.printings.sort((a, b) => a.releasedOn < b.releasedOn ? 1 : -1)[0].imageUri;
+                return card.name + "\t" + card.primaryType + "\t" + card.cmc + "\t" + card.color + "\t" + imageUri + "\n";
             }).sort().join("");
         })
         .then(csv => response.status(200).send(csv));
