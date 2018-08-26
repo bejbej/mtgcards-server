@@ -157,7 +157,7 @@ module.exports = function () {
             }
 
             existingCard.printings.push(thisPrinting);
-            return db.cards().findOneAndUpdate({name: card.name}, card, {upsert: true});
+            return db.cards().findOneAndUpdate({name: card.name}, existingCard, {upsert: true});
         });
     }
 

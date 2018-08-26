@@ -19,8 +19,16 @@ module.exports = function () {
         "starter"
     ];
 
+    let setCodeBlacklist = [
+        "ana"
+    ];
+
     let filterSet = (set) => {
         if (setTypeWhitelist.indexOf(set.set_type) === -1) {
+            return false;
+        }
+
+        if (setCodeBlacklist.indexOf(set.code) > -1) {
             return false;
         }
 
