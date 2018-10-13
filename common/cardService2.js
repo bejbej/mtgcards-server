@@ -101,7 +101,7 @@ module.exports = function () {
                 uri = primaryFace.image_uris.border_crop;
             }
 
-            return /en\/([^\.]+)/.exec(uri)[1];
+            return /border_crop\/([^\.]+)/.exec(uri)[1];
         }
 
         return {
