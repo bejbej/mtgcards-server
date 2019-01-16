@@ -77,12 +77,26 @@ module.exports = (app) => {
     app.post("/api/sets/batch/:size/cards", (request, response) => {
         return setService2.getUnknown()
         .then(sets => sets.slice(0, request.params.size))
-        .then(sets => sets.map(set => {
-            return cardService2.getBySet(set)
-            .then(cards => Promise.all(cards.map(cardService2.save)))
-            .then(() => setService2.save(set))
-        }))
-        .then(promises => Promise.all(promises))
+        .then(sets => {
+            let invoke = (setList) => {
+                let start = new Date();
+                if (setList.length === 0) {
+                    return;
+                }
+                let set = setList.pop();
+                return cardService2.getBySet(set)
+                    .then(cards => Promise.all(cards.map(cardService2.save)))
+                    .then(() => setService2.save(set))
+                    .then(() => {
+                        let end = new Date();
+                        let elapsed = end.getTime() - start.getTime();
+                        console.log(set.name + " - " + elapsed + "ms - " + setList.length + " sets left")
+                    })
+                    .then(() => invoke(setList));
+            }
+
+            return invoke(sets);
+        })
         .then(() => response.status(201).send());
     });
 }

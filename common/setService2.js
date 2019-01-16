@@ -19,11 +19,26 @@ module.exports = function () {
         "starter"
     ];
 
+    let setCodeWhitelist = [
+        "gnt",  // Game Night
+        "pgp1"  // M19 Gift Pack
+    ]
+
     let setCodeBlacklist = [
-        "ana"
+        "ren",  // Foreign Language
+        "rin",  // Foregin Language
+        "fbb"   // Foregin Language
     ];
 
     let filterSet = (set) => {
+        if (setCodeWhitelist.indexOf(set.code) > -1) {
+            return true;
+        }
+
+        if (set.digital) {
+            return false;
+        }
+
         if (setTypeWhitelist.indexOf(set.set_type) === -1) {
             return false;
         }
@@ -32,12 +47,9 @@ module.exports = function () {
             return false;
         }
 
-        if (set.name.indexOf("World Championship") === 0) {
-            return false;
-        }
-
-        let cutoff = new Date() + 1209600000; // Sets are generally spoiled 2 full weeks before official release
-        if (new Date(set.released_at) > cutoff) {
+        let cutoffMs = new Date().getTime() + 1209600000; // Sets are generally spoiled 2 full weeks before official release
+        let setMs = new Date(set.released_at).getTime();
+        if (setMs > cutoffMs) {
             return false;
         }
 
@@ -53,7 +65,8 @@ module.exports = function () {
             name: set.name,
             code: set.code,
             searchUri: set.search_uri,
-            releasedOn: new Date(set.released_at)
+            releasedOn: new Date(set.released_at),
+            type: set.set_type
         }
     }
 
