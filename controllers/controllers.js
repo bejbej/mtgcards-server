@@ -20,61 +20,55 @@ module.exports = (app) => {
         response.json(body);
     });
 
-    app.get("/api/cards", (request, response) => {
-        return cardService2.getAll()
-        .then(cards => {
-            return "name\tprimaryType\tcmc\tcolor\timageUri\n" + cards.map(card => {
-                let imageUri = card.printings.sort((a, b) => a.releasedOn < b.releasedOn ? 1 : -1)[0].imageUri;
-                return card.name + "\t" + card.primaryType + "\t" + card.cmc + "\t" + card.color + "\t" + imageUri + "\n";
-            }).sort().join("");
-        })
-        .then(csv => response.status(200).send(csv));
+    app.get("/api/cards", async (request, response) => {
+        let cards = await cardService2.getAll();
+        let csv = "name\tprimaryType\tcmc\tcolor\timageUri\n" + cards.map(card => {
+            let imageUri = card.printings.sort((a, b) => a.releasedOn < b.releasedOn ? 1 : -1)[0].imageUri;
+            return card.name + "\t" + card.primaryType + "\t" + card.cmc + "\t" + card.color + "\t" + imageUri + "\n";
+        }).sort().join("");
+        response.status(200).send(csv);
     });
 
-    app.get("/api/sets/all", (request, response) => {
-        return setService2.getAll()
-        .then(sets => response.status(200).json({ count: sets.length, sets: sets }));
+    app.get("/api/sets/all", async (request, response) => {
+        let sets = await setService2.getAll();
+        response.status(200).json({ count: sets.length, sets: sets });
     });
 
-    app.get("/api/sets/unknown", (request, response) => {
-        return setService2.getUnknown()
-        .then(sets => {
-            return sets
-        })
-        .then(sets => response.status(200).json({ count: sets.length, sets: sets }));
+    app.get("/api/sets/unknown", async (request, response) => {
+        let sets = await setService2.getUnknown();
+        response.status(200).json({ count: sets.length, sets: sets });
     });
 
-    app.get("/api/sets/known", (request, response) => {
-        return setService2.getKnown()
-        .then(sets => response.status(200).json({ count: sets.length, sets: sets }));
+    app.get("/api/sets/known", async (request, response) => {
+        let sets = await setService2.getKnown();
+        response.status(200).json({ count: sets.length, sets: sets });
     })
 
-    app.get("/api/sets/code/:code", (request, response) => {
-        return setService2.getByCode(request.params.code)
-        .then(set => set ? response.status(200).json(set) : response.status(404).send());
+    app.get("/api/sets/code/:code", async (request, response) => {
+        let set = await setService2.getByCode(request.params.code);
+        set ? response.status(200).json(set) : response.status(404).send();
     });
 
-    app.get("/api/sets/code/:code/cards", (request, response) => {
-        return setService2.getByCode(request.params.code)
-        .then(set => set ? cardService2.getBySet(set) : undefined)
-        .then(cards => cards ? response.status(200).json({count: cards.length, cards: cards}) : response.status(404).send());
+    app.get("/api/sets/code/:code/cards", async (request, response) => {
+        let set = await setService2.getByCode(request.params.code);
+        let cards = set ? cardService2.getBySet(set) : undefined;
+        cards ? response.status(200).json({count: cards.length, cards: cards}) : response.status(404).send();
     });
 
-    app.post("/api/sets/code/:code/cards", (request, response) => {
-        return setService2.getByCode(request.params.code)
-        .then(set => {
-            if (!set) {
-                return response.status(404).send();
-            }
-
-            return cardService2.getBySet(set)
-            .then(cards => Promise.all(cards.map(cardService2.save)))
-            .then(() => setService2.save(set))
-            .then(() => response.status(204).send());
-        });
+    app.post("/api/sets/code/:code/cards", async (request, response) => {
+        let set = await setService2.getByCode(request.params.code);
+        if (!set) {
+            response.status(404).send();
+            return;
+        }
+        let cards = await cardService2.getBySet(set);
+        await Promise.all(cards.map(cardService2.save));
+        await setService2.save(set);
+        response.status(204).send();
     });
 
     app.post("/api/sets/batch/:size/cards", (request, response) => {
+        response.status(201).send();
         return setService2.getUnknown()
         .then(sets => sets.slice(0, request.params.size))
         .then(sets => {
@@ -96,7 +90,6 @@ module.exports = (app) => {
             }
 
             return invoke(sets);
-        })
-        .then(() => response.status(201).send());
+        });
     });
 }

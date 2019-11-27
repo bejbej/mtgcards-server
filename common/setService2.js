@@ -1,11 +1,12 @@
 module.exports = function () {
-    var http = require("request-promise");
-    var db = require("../db/db.js");
-    var cache = require("../common/cache.js");
+    const http = require("request-promise");
+    const db = require("../db/db.js");
+    const cache = require("../common/cache.js");
+    const List = require("../common/list.js");
 
-    let baseUri = "https://api.scryfall.com/sets";
+    const baseUri = "https://api.scryfall.com/sets";
 
-    let setTypeWhitelist = [
+    const setTypeWhitelist = [
         "core",
         "draft_innovation",
         "expansion",
@@ -19,15 +20,16 @@ module.exports = function () {
         "starter"
     ];
 
-    let setCodeWhitelist = [
+    const setCodeWhitelist = [
         "gnt",  // Game Night
-        "pgp1"  // M19 Gift Pack
+        "g18"  // M19 Gift Pack
     ]
 
-    let setCodeBlacklist = [
+    const setCodeBlacklist = [
         "ren",  // Foreign Language
         "rin",  // Foregin Language
-        "fbb"   // Foregin Language
+        "fbb",  // Foregin Language
+        "4bb"
     ];
 
     let filterSet = (set) => {
@@ -70,15 +72,14 @@ module.exports = function () {
         }
     }
 
-    let getByCode = (code) => {
-        return db.sets().findOne({code: code})
-        .then(set => {
-            if (set !== null) {
-                return set;
-            }
+    let getByCode = async (code) => {
+        let set = await db.sets().findOne({code: code})
+        if (set !== null) {
+            return set;
+        }
 
-            return getAll().then(sets => sets.filter(set => set.code.toLowerCase() === code.toLowerCase())[0]);
-        });
+        let allSets = await getAll();
+        return List.first(allSets.filter(set => set.code.toLowerCase() === code.toLowerCase()));
     }
 
     let getKnown = () => {
@@ -86,26 +87,22 @@ module.exports = function () {
     }
 
     let getAll = () => {
-        return cache.get("set", () => {
-            return http.get(baseUri)
-            .then(response => JSON.parse(response).data)
-            .then(sets => sets.filter(filterSet))
-            .then(sets => sets.map(mapSet));
+        return cache.get("set", async () => {
+            let response = await http.get(baseUri);
+            let sets = JSON.parse(response).data;
+            let filteredSets = sets.filter(filterSet);
+            let mappedSets = filteredSets.map(mapSet);
+            return mappedSets;
         });
     }
 
-    let getUnknown = () => {
-        let knownSets = null;
-        let allSets = null;
-
-        let knownSetsPromise = getKnown().then(x => knownSets = x);
-        let allSetsPromise = getAll().then(x => allSets = x);
-
-        return Promise.all([knownSetsPromise, allSetsPromise])
-        .then(() => {
-            return allSets.filter(set => {
-                return !knownSets.some(x => x.code === set.code);
-            });
+    let getUnknown = async () => {
+        let knownSetsPromise = getKnown();
+        let allSetsPromise = getAll();
+        let knownSets = await knownSetsPromise;
+        let allSets = await allSetsPromise;
+        return allSets.filter(set => {
+            return !knownSets.some(x => x.code === set.code);
         });
     }
 

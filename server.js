@@ -1,4 +1,3 @@
-require("./common/helpers.js");
 var env = require('env2')('./env.json');
 var db = require("./db/db.js");
 var controllers = require("./controllers/controllers.js");

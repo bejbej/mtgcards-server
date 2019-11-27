@@ -2,6 +2,7 @@ module.exports = function () {
     var http = require("request-promise");
     var db = require("../db/db.js");
     var cache = require("../common/cache.js");
+    var List = require("../common/list.js");
 
     let cardTypes = [
         "creature",
@@ -22,19 +23,29 @@ module.exports = function () {
     }
 
     let filterCard = (card) => {
-        if (!card.type_line) {
-            return true;
-        }
-
+        // No contraptions
         if (card.type_line.indexOf("Contraption") > -1) {
             return false;
         }
 
-        if (cardTypes.some(type => card.type_line.toLowerCase().indexOf(type) > -1)) {
-            return true;
+        // Only card with approved card types
+        if (!cardTypes.some(type => card.type_line.toLowerCase().indexOf(type) > -1)) {
+            return false;
         }
 
-        return false;
+        // Only english versions of cards
+        if (card.lang !== "en") {
+            return false;
+        }
+
+        return true;
+    }
+
+    let getMostReadableCardVersion = (cards) => {
+        // Sort any non promo versions to the top of the list
+        cards = cards.sort((a) => a.promo ? 1 : 0)
+        let card = List.first(cards);
+        return card;
     }
 
     let mapCard = (card, set) => {
@@ -116,27 +127,24 @@ module.exports = function () {
         };
     }
 
-    let get = (uri, cards) => {
-        if (!uri) {
-            return Promise.resolve(cards)
-        }
-
-        return http.get(uri)
-        .then(response => JSON.parse(response))
-        .then(response => {
+    let getCardsByUri = async (uri) => {
+        let cards = [];
+        while (uri) {
+            let response = JSON.parse(await http.get(uri));
             cards = cards.concat(response.data);
-            return get(response.next_page, cards);
-        });
+            uri = response.next_page;
+        }
+        return cards;
     }
 
     let getBySet = (set) => {
-        return cache.get(set.name + "_cards_parsed", () => {
-            return cache.get(set.name + "_cards_raw", () => {
-                return get(set.searchUri, []);
-            })
-            .then(cards => cards.filter(filterCard))
-            .then(cards => cards.map(card => mapCard(card, set)))
-            .then(cards => cards.unique(card => card.name));
+        return cache.get(set.name + "_cards_parsed", async () => {
+            let cards = await getCardsByUri(set.searchUri);
+            let filteredCards = cards.filter(filterCard);
+            let cardsGroupedByName = List.groupBy(filteredCards, card => card.name);
+            let mostReadableCardVersion = cardsGroupedByName.map(getMostReadableCardVersion);
+            let mappedCards = mostReadableCardVersion.map(card => mapCard(card, set));
+            return mappedCards;
         });
     }
 
@@ -144,21 +152,20 @@ module.exports = function () {
         return db.cards().find().toArray();
     }
 
-    let save = (card) => {
-        return db.cards().findOne({name: card.name})
-        .then(existingCard => {
-            if (!existingCard) {
-                return db.cards().findOneAndUpdate({name: card.name}, card, {upsert: true});
-            }
+    let save = async (card) => {
+        let existingCard = await db.cards().findOne({name: card.name})
+        if (!existingCard) {
+            await db.cards().findOneAndUpdate({name: card.name}, card, {upsert: true});
+            return;
+        }
 
-            let thisPrinting = card.printings[0];
-            if (existingCard.printings.some(x => x.imageUri === thisPrinting.imageUri)) {
-                return Promise.resolve();
-            }
+        let thisPrinting = card.printings[0];
+        if (existingCard.printings.some(x => x.imageUri === thisPrinting.imageUri)) {
+            return;
+        }
 
-            existingCard.printings.push(thisPrinting);
-            return db.cards().findOneAndUpdate({name: card.name}, existingCard, {upsert: true});
-        });
+        existingCard.printings.push(thisPrinting);
+        await db.cards().findOneAndUpdate({name: card.name}, existingCard, {upsert: true});
     }
 
     return {
