@@ -5,6 +5,7 @@ module.exports = function () {
     var List = require("../common/list.js");
 
     let cardTypes = [
+        "conspiracy",
         "creature",
         "land",
         "artifact",

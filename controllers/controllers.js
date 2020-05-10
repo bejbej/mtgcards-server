@@ -51,7 +51,7 @@ module.exports = (app) => {
 
     app.get("/api/sets/code/:code/cards", async (request, response) => {
         let set = await setService2.getByCode(request.params.code);
-        let cards = set ? cardService2.getBySet(set) : undefined;
+        let cards = set ? await cardService2.getBySet(set) : undefined;
         cards ? response.status(200).json({count: cards.length, cards: cards}) : response.status(404).send();
     });
 

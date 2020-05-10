@@ -22,6 +22,7 @@ module.exports = function () {
 
     const setCodeWhitelist = [
         "gnt",  // Game Night
+        "gn2",
         "g18"  // M19 Gift Pack
     ]
 
