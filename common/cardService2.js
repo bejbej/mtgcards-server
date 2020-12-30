@@ -154,19 +154,18 @@ module.exports = function () {
     }
 
     let save = async (card) => {
-        let existingCard = await db.cards().findOne({name: card.name})
-        if (!existingCard) {
-            await db.cards().findOneAndUpdate({name: card.name}, card, {upsert: true});
-            return;
+        let existingCard = await db.cards().findOne({name: card.name});
+        if (existingCard) {
+            let thisPrinting = card.printings[0];
+            if (existingCard.printings.some(x => x.imageUri === thisPrinting.imageUri)) {
+                return;
+            }
+            existingCard.printings.push(thisPrinting);
+            await db.cards().replaceOne({ "_id": existingCard._id}, existingCard);
         }
-
-        let thisPrinting = card.printings[0];
-        if (existingCard.printings.some(x => x.imageUri === thisPrinting.imageUri)) {
-            return;
+        else {
+            db.cards().insert(card);
         }
-
-        existingCard.printings.push(thisPrinting);
-        await db.cards().findOneAndUpdate({name: card.name}, existingCard, {upsert: true});
     }
 
     return {

@@ -69,7 +69,7 @@ module.exports = (app) => {
 
     app.post("/api/sets/batch/:size/cards", (request, response) => {
         response.status(201).send();
-        return setService2.getUnknown()
+        setService2.getUnknown()
         .then(sets => sets.slice(0, request.params.size))
         .then(sets => {
             let invoke = (setList) => {

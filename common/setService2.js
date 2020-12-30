@@ -108,7 +108,7 @@ module.exports = function () {
     }
 
     let save = (set) => {
-        return db.sets().findOneAndUpdate({code: set.code}, set, {upsert: true});
+        return db.sets().replaceOne({code: set.code}, set, {upsert: true});
     }
 
     return {
