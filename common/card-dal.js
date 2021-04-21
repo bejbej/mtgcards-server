@@ -22,6 +22,10 @@ const computeDesirability = (card) => {
         "spellbook"
     ];
 
+    const sets = [
+        "plist"
+    ]
+
     const frameEffects = [
         "extendedart",
         "showcase"
@@ -31,19 +35,23 @@ const computeDesirability = (card) => {
         return 0;
     }
 
-    if (card.frame === "1997") {
+    if (sets.some(set => set === card.set)) {
         return 1;
     }
 
-    if (card.full_art) {
+    if (card.frame === "1997") {
         return 2;
     }
 
-    if (card.frame_effects && frameEffects.some(frameEffect => card.frame_effects.some(cardFrameEffect => cardFrameEffect === frameEffect))) {
+    if (card.full_art) {
         return 3;
     }
 
-    return 4;
+    if (card.frame_effects && frameEffects.some(frameEffect => card.frame_effects.some(cardFrameEffect => cardFrameEffect === frameEffect))) {
+        return 4;
+    }
+
+    return 5;
 }
 
 const getMostDesirablePrinting = (printings) => {
