@@ -28,7 +28,8 @@ const computeDesirability = (card) => {
 
     const frameEffects = [
         "extendedart",
-        "showcase"
+        "showcase",
+        "etched"
     ]
 
     if (setTypes.some(setType => setType === card.set_type)) {
