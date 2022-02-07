@@ -70,7 +70,7 @@ const getMostDesirablePrinting = (printings) => {
             return 1;
         }
 
-        return a.card.released_at === b.card.released_at;
+        return Date.parse(a.card.released_at) < Date.parse(b.card.released_at) ? 1 : -1;
     });
 
     return first(sortedPrintings).card;
