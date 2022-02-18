@@ -1,7 +1,7 @@
 const fs = require("fs").promises;
 const { sanitizeFileName } = require("./sanitize-file-name.js");
 const { asyncMap } = require("./async-map.js");
-const { first, groupBy, unique } = require("./list.js");
+const { any, contains, intersect, first, groupBy, unique } = require("./list.js");
 const cardDirName = __dirname + "/../data/cards";
 
 const getOrCreateCardFile = async (fileName) => {
@@ -15,6 +15,10 @@ const getOrCreateCardFile = async (fileName) => {
 }
 
 const computeDesirability = (card) => {
+    const language = [
+        "en"
+    ]
+
     const setTypes = [
         "masterpiece",
         "box",
@@ -29,30 +33,49 @@ const computeDesirability = (card) => {
     const frameEffects = [
         "extendedart",
         "showcase",
-        "etched"
+        "etched",
+        "inverted"
     ]
 
-    if (setTypes.some(setType => setType === card.set_type)) {
+    const promoTypes = [
+        "boosterfun",
+        "bundle"
+    ]
+
+    if (!contains(language, card.lang)) {
         return 0;
     }
 
-    if (sets.some(set => set === card.set)) {
+    if (contains(setTypes, card.setType)) {
         return 1;
     }
 
-    if (card.frame === "1997") {
+    if (contains(sets, card.set)) {
         return 2;
     }
 
-    if (card.full_art) {
+    if (card.frame === "1997") {
         return 3;
     }
 
-    if (card.frame_effects && frameEffects.some(frameEffect => card.frame_effects.some(cardFrameEffect => cardFrameEffect === frameEffect))) {
+    if (card.full_art) {
         return 4;
     }
 
-    return 5;
+    if (card.frame_effects && any(intersect(card.frame_effects, frameEffects))) {
+        return 5;
+    }
+
+
+    if (card.promo_types && any(intersect(card.promo_types, promoTypes))) {
+        return 5;
+    }
+
+    if (!card.nonfoil) {
+        return 6;
+    }
+
+    return 7;
 }
 
 const getMostDesirablePrinting = (printings) => {

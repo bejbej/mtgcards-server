@@ -1,3 +1,5 @@
+const { contains } = require("./list");
+
 const typeMapping = {
     "conspiracy": "conspracy",
     "creature": "creature",
@@ -31,7 +33,7 @@ const determinePrimaryType = (card) => {
         return null;
     }
 
-    const typeLine = layouts.some(layout => layout === card.layout) ? card.card_faces["0"].type_line : card.type_line;
+    const typeLine = contains(layouts, card.layout) ? card.card_faces["0"].type_line : card.type_line;
     const typeKeys = Object.keys(typeMapping);
     for (let i = 0; i < typeKeys.length; ++i) {
         const typeKey = typeKeys[i];
@@ -51,7 +53,7 @@ module.exports = class CardParser {
             "flip"
         ];
 
-        return layouts.some(layout => layout === card.layout) ? card.card_faces["0"].name : card.name;
+        return contains(layouts, card.layout) ? card.card_faces["0"].name : card.name;
     }
 
     static determineColor(card) {
@@ -60,7 +62,7 @@ module.exports = class CardParser {
             "transform"
         ];
 
-        const primaryFace = layouts.some(layout => layout === card.layout) ? card.card_faces["0"] : card;
+        const primaryFace = contains(layouts, card.layout) ? card.card_faces["0"] : card;
 
         switch (primaryFace.colors.length) {
             case 0:
@@ -92,8 +94,17 @@ module.exports = class CardParser {
             "transform"
         ];
 
-        const primaryFace = layouts.some(layout => layout === card.layout) ? card.card_faces["0"] : card;
+        const primaryFace = contains(layouts, card.layout) ? card.card_faces["0"] : card;
         const [, imageUri ] = /front\/([^\.]+)\.jpg/.exec(primaryFace.image_uris.border_crop);
         return imageUri;
+    }
+
+    static determineDoubleFace(card) {
+        const layouts = [
+            "modal_dfc",
+            "transform"
+        ];
+
+        return contains(layouts, card.layout) ? "\t1" : "";
     }
 }

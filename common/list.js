@@ -52,8 +52,22 @@ module.exports = class List {
         return List.unique(union, keyFunc);
     }
 
+    static intersect(array1, array2, keyFunc) {
+        keyFunc = keyFunc || (x => x);
+        return array1.filter(item1 => array2.some(item2 => keyFunc(item1) === keyFunc(item2)));
+    }
+
     static except(sourceArray, exceptedArray, keyFunc) {
         const exceptedKeys = List.toDictionary(exceptedArray, keyFunc);
         return sourceArray.filter(x => !exceptedKeys[keyFunc(x)]);
+    }
+
+    static contains(array, item, keyFunc) {
+        keyFunc = keyFunc || (x => x);
+        return array.some(arrayItem => keyFunc(arrayItem) === keyFunc(item));
+    }
+
+    static any(array) {
+        return array.length > 0;
     }
 }
