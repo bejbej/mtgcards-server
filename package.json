@@ -10,6 +10,8 @@
   "author": "James H",
   "license": "ISC",
   "dependencies": {
+    "env2": "^2.2.2",
+    "nodegit": "^0.27.0",
     "request": "^2.88.2",
     "request-promise": "^4.2.6"
   }
